@@ -42,7 +42,6 @@ def train_model(args, model, train_loader, test_loader, debug=False):
             return
         count += 1
 
-        train_losses = []
         recon_losses, disc_losses, gen_losses = [], [], []
         for i, batch_data in train_iterator:
             images, labels = batch_data
@@ -58,15 +57,12 @@ def train_model(args, model, train_loader, test_loader, debug=False):
                 float(llog["disc_loss"].mean()),
                 float(llog["gen_loss"].mean()),
             )
-            train_loss = recon_loss + disc_loss + gen_loss
-            train_iterator.set_postfix({"train_loss": train_loss})
-            train_losses.append(train_loss)
+            train_iterator.set_postfix({"train_loss": recon_loss})
             recon_losses.append(recon_loss)
             disc_losses.append(disc_loss)
             gen_losses.append(gen_loss)
             if debug:
                 break
-        writer.add_scalar("train/loss", sum(train_losses) / len(train_losses), epoch)
         writer.add_scalar(
             "train/recon_loss", sum(recon_losses) / len(recon_losses), epoch
         )
@@ -94,9 +90,7 @@ def train_model(args, model, train_loader, test_loader, debug=False):
                     float(llog["disc_loss"].mean()),
                     float(llog["gen_loss"].mean()),
                 )
-                eval_loss = recon_loss + disc_loss + gen_loss
-                test_iterator.set_postfix({"eval_loss": eval_loss})
-                eval_losses.append(eval_loss)
+                test_iterator.set_postfix({"eval_loss": recon_loss})
                 recon_losses.append(recon_loss)
                 disc_losses.append(disc_loss)
                 gen_losses.append(gen_loss)
@@ -115,8 +109,7 @@ def train_model(args, model, train_loader, test_loader, debug=False):
                     if debug:
                         break
 
-        print(f"Evaluation Score: [{sum(eval_losses)/len(eval_losses)}]")
-        writer.add_scalar("eval/loss", sum(eval_losses) / len(eval_losses), epoch)
+        print(f"Evaluation Score: [{sum(recon_losses) / len(recon_losses)}]")
         writer.add_scalar(
             "eval/recon_loss", sum(recon_losses) / len(recon_losses), epoch
         )

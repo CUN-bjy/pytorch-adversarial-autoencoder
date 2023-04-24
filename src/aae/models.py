@@ -58,9 +58,7 @@ class AAE(nn.Module):
             nn.ModuleList([self._encoder, self._decoder]).parameters(), lr=recon_lr
         )
         self._gen_optim = torch.optim.Adam(self._encoder.parameters(), lr=reg_lr)
-        self._disc_optim = torch.optim.Adam(
-            nn.ModuleList([self._encoder, self._discriminator]).parameters(), lr=reg_lr
-        )
+        self._disc_optim = torch.optim.Adam(self._discriminator.parameters(), lr=reg_lr)
 
     def encode(self, x: Any) -> Any:
         return self._encoder(x)

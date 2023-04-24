@@ -1,2 +1,6 @@
 torch
+torchvision
+tqdm
+easydict
+matplotlib
 -e .

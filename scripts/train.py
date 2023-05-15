@@ -14,8 +14,10 @@ from torch.utils.tensorboard import SummaryWriter
 import easydict
 import numpy as np
 from tqdm import tqdm
+import os
 
-writer = SummaryWriter()
+log_dir = "runs/"
+writer = SummaryWriter(log_dir)
 
 
 ## visualization
@@ -104,8 +106,8 @@ def train_model(args, model, train_loader, test_loader, debug=False):
                     )[0]
                     imshow(nhw_orig.cpu(), f"orig{epoch}")
                     imshow(nhw_recon.cpu(), f"recon{epoch}")
-                    # writer.add_images(f"original{i}", nchw_orig, epoch)
-                    # writer.add_images(f"reconstructed{i}", nchw_recon, epoch)
+                    # writer.add_images(f"original{i}", nhw_orig.cpu(), epoch)
+                    # writer.add_images(f"reconstructed{i}", nhw_recon.cpu(), epoch)
                     if debug:
                         break
 
@@ -115,6 +117,12 @@ def train_model(args, model, train_loader, test_loader, debug=False):
         )
         writer.add_scalar("eval/disc_loss", sum(disc_losses) / len(disc_losses), epoch)
         writer.add_scalar("eval/gen_loss", sum(gen_losses) / len(gen_losses), epoch)
+        
+        checkpoint = {
+            "epoch": epoch + 1,
+            "model": model.state_dict(),
+        }
+        torch.save(checkpoint, os.path.join(log_dir, "aae_checkpoint.pt"))
         if debug:
             break
 

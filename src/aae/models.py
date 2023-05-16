@@ -47,6 +47,7 @@ class AAE(nn.Module):
     ) -> None:
         super(AAE, self).__init__()
         self.device = device
+        self._latent_dim = latent_dim
 
         # models
         self._encoder = MLP(in_dim, latent_dim)
@@ -68,6 +69,9 @@ class AAE(nn.Module):
 
     def discriminate(self, z: Any) -> Any:
         return self._discriminator(z)
+
+    def get_latent_dim(self):
+        return self._latent_dim
 
     def forward(self) -> None:
         """don't use this function"""
@@ -156,8 +160,89 @@ class AAE(nn.Module):
 
 
 class VAE:
-    pass
+    """Variational Auto Encoder"""
+    
+    def __init__(
+        self,
+        in_dim: int,
+        latent_dim: int,
+        recon_lr: float = 1e-3,
+        kl_weight: float = 1e-3,
+        device=torch.device("cuda"),
+    ) -> None:
+        super(AAE, self).__init__()
+        self.device = device
+        self._latent_dim = latent_dim
+        
+        self.kl_weight = kl_weight
 
+        # models
+        self._encoder = MLP(in_dim, latent_dim)
+        self._decoder = MLP(latent_dim, in_dim)
+
+        # optimizers
+        self._optim = torch.optim.Adam(
+            nn.ModuleList([self._encoder, self._decoder]).parameters(), lr=recon_lr
+        )
+
+    def encode(self, x: Any) -> Any:
+        return self._encoder(x)
+
+    def decode(self, z: Any) -> Any:
+        return self._decoder(z)
+
+    def get_latent_dim(self):
+        return self._latent_dim
+
+    def forward(self) -> None:
+        """don't use this function"""
+        return Exception("this function is not implemented")
+
+    def train(self, x: Any) -> Dict[str, float]:
+        self._encoder.train()
+        self._decoder.train()
+
+        z = self.encode(x)
+        x_hat = self.decode(z)
+
+        recon_loss = F.mse_loss(x_hat, x)
+        kl_loss = 1.0
+        
+        loss = recon_loss + self.kl_weight * kl_loss 
+
+        self._optim.zero_grad()
+        loss.mean().backward()
+        self._optim.step()
+
+        return {
+            "recon_loss": recon_loss.detach(),
+            "kl_loss": kl_loss.detach(),
+        }
+
+    def eval(self, x):
+        self._encoder.eval()
+        self._decoder.eval()
+        self._discriminator.eval()
+
+        # eval autoencoder
+        z_fake = self.encode(x)
+        x_hat = self.decode(z_fake)
+
+        # eval adversarial network
+        z_real = torch.randn_like(z_fake)
+
+        d_real = self.discriminate(z_real)
+        d_fake = self.discriminate(z_fake)
+
+        recon_loss = F.mse_loss(x_hat, x)
+        disc_loss = -(torch.log(d_real) + torch.log(1 - d_fake))
+        gen_loss = -torch.log(d_fake)
+
+        return {
+            "recon_loss": recon_loss.detach(),
+            "disc_loss": disc_loss.detach(),
+            "gen_loss": gen_loss.detach(),
+        }, x_hat
 
 class GAN:
     pass

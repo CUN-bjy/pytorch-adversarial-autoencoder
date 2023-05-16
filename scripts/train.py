@@ -142,12 +142,12 @@ if __name__ == "__main__":
             "device": torch.device("cuda")
             if torch.cuda.is_available()
             else torch.device("cpu"),
-            "input_size": (218, 178), # (28,28) for MNIST, (218, 178) for CelebA
-            "num_channels": 3, # 1 for MNIST, 3 for CelebA
-            "latent_size": 512,
+            "input_size": (28, 28), # (28,28) for MNIST, (218, 178) for CelebA
+            "num_channels": 1, # 1 for MNIST, 3 for CelebA
+            "latent_size": 2, # 2 for MNIST, 128 for CelebA
             "learning_rate": 0.001,
-            "dataset": "celeba",
-            "max_iter": 10000,
+            "dataset": "mnist",
+            "max_iter": 2000,
             "debug": False,
         }
     )

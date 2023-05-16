@@ -74,7 +74,7 @@ if __name__ == "__main__":
             "input_size": (28, 28), # (28,28) for MNIST, (218, 178) for CelebA
             "num_channels": 1, # 1 for MNIST, 3 for CelebA
             "latent_size": 2, # 128 for MNIST, 512 for CelebA
-            "checkpoint_path": "/home/junyeob/pytorch-adversarial-autoencoder/runs/230516AAE-MNIST-2d-guassian/aae_checkpoint.pt"
+            "checkpoint_path": "/home/junyeob/pytorch-adversarial-autoencoder/runs/230516AAE-MNIST-2d-10-gmm/aae_checkpoint.pt"
         }
     )
 

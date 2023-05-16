@@ -7,6 +7,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from typing import Dict, Any
+from aae.distribution import diagonal_gaussian, gaussian_mixture
 
 
 class MLP(nn.Module):
@@ -43,6 +44,7 @@ class AAE(nn.Module):
         latent_dim: int,
         recon_lr: float = 1e-3,
         reg_lr: float = 1e-5,
+        dist_type: str = "gaussian",
         device=torch.device("cuda"),
     ) -> None:
         super(AAE, self).__init__()
@@ -53,6 +55,9 @@ class AAE(nn.Module):
         self._encoder = MLP(in_dim, latent_dim)
         self._decoder = MLP(latent_dim, in_dim)
         self._discriminator = MLP(latent_dim, 1, binary_mode=True)
+
+        # type of prior distribution
+        self.dist_type = dist_type
 
         # optimizers
         self._recon_optim = torch.optim.Adam(
@@ -82,6 +87,8 @@ class AAE(nn.Module):
         self._decoder.train()
         self._discriminator.train()
 
+        B, D = x.size()
+
         ###############################
         # 1. reconstruction phase
         ###############################
@@ -102,7 +109,12 @@ class AAE(nn.Module):
         self._encoder.eval()
 
         z_fake = self.encode(x)
-        z_real = torch.randn_like(z_fake)
+        
+        z_real = diagonal_gaussian(z_fake.size(0), z_fake.size(1)) \
+            if self.dist_type=="gaussian" \
+            else gaussian_mixture(z_fake.size(0), z_fake.size(1), 10, x_var=0.5, y_var=0.1) # 10 mode of gaussian mixture
+        z_real = torch.Tensor(z_real).to(self.device)
+        
 
         d_real = self.discriminate(z_real)
         d_fake = self.discriminate(z_fake)
@@ -143,7 +155,10 @@ class AAE(nn.Module):
         x_hat = self.decode(z_fake)
 
         # eval adversarial network
-        z_real = torch.randn_like(z_fake)
+        z_real = diagonal_gaussian(z_fake.size(0), z_fake.size(1)) \
+            if self.dist_type=="gaussian" \
+            else gaussian_mixture(z_fake.size(0), z_fake.size(1), 10, x_var=0.5, y_var=0.1)  # 10 mode of gaussian mixture
+        z_real = torch.Tensor(z_real).to(self.device)
 
         d_real = self.discriminate(z_real)
         d_fake = self.discriminate(z_fake)

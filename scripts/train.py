@@ -144,9 +144,10 @@ if __name__ == "__main__":
             "input_size": (28, 28), # (28,28) for MNIST, (218, 178) for CelebA
             "num_channels": 1, # 1 for MNIST, 3 for CelebA
             "latent_size": 2, # 2 for MNIST, 128 for CelebA
+            "dist_type": "gaussian", # gaussian or gmm
             "learning_rate": 0.001,
             "dataset": "mnist",
-            "max_iter": 2000,
+            "max_iter": 3000,
             "debug": False,
         }
     )
@@ -179,7 +180,7 @@ if __name__ == "__main__":
 
     # Declare AAE model
     in_dim = args.num_channels * args.input_size[0] * args.input_size[1]
-    model = AAE(in_dim, args.latent_size, device=args.device)
+    model = AAE(in_dim, args.latent_size, dist_type=args.dist_type, device=args.device)
     model.to(args.device)
 
     # Train

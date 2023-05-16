@@ -4,7 +4,7 @@
 # Author: Qian Ge <geqian1001@gmail.com>
 
 import numpy as np
-from math import sin,cos,sqrt
+from math import sin, cos, sqrt
 
 
 def interpolate(plot_size=20, interpolate_range=[-3, 3, -3, 3]):
@@ -15,14 +15,17 @@ def interpolate(plot_size=20, interpolate_range=[-3, 3, -3, 3]):
     max_x = interpolate_range[1]
     min_y = interpolate_range[2]
     max_y = interpolate_range[3]
-    
-    zs = np.rollaxis(np.mgrid[min_x: max_x: nx*1j, max_y:min_y: ny*1j], 0, 3)
-    zs = zs.transpose(1, 0, 2)
-    return np.reshape(zs, (plot_size*plot_size, 2))
 
-def interpolate_gm(plot_size=20, interpolate_range=[-1., 1., -0.2, 0.2],
-                   mode_id=0, n_mode=10):
+    zs = np.rollaxis(np.mgrid[min_x : max_x : nx * 1j, max_y : min_y : ny * 1j], 0, 3)
+    zs = zs.transpose(1, 0, 2)
+    return np.reshape(zs, (plot_size * plot_size, 2))
+
+
+def interpolate_gm(
+    plot_size=20, interpolate_range=[-1.0, 1.0, -0.2, 0.2], mode_id=0, n_mode=10
+):
     n_samples = plot_size * plot_size
+
     def sample(x, y, mode_id, n_mode):
         shift = 1.4
         r = 2.0 * np.pi / float(n_mode) * float(mode_id)
@@ -41,19 +44,24 @@ def interpolate_gm(plot_size=20, interpolate_range=[-1., 1., -0.2, 0.2],
         z[i, :2] = sample(x[i], y[i], mode_id, n_mode)
     return z
 
-def gaussian(batch_size, n_dim, mean=0, var=1.):
+
+def gaussian(batch_size, n_dim, mean=0, var=1.0):
     z = np.random.normal(mean, var, (batch_size, n_dim)).astype(np.float32)
     return z
 
-def diagonal_gaussian(batch_size, n_dim, mean=0, var=1.):
+
+def diagonal_gaussian(batch_size, n_dim, mean=0, var=1.0):
     cov_mat = np.diag([var for i in range(n_dim)])
     mean_vec = [mean for i in range(n_dim)]
-    z = np.random.multivariate_normal(
-        mean_vec, cov_mat, (batch_size,)).astype(np.float32)
+    z = np.random.multivariate_normal(mean_vec, cov_mat, (batch_size,)).astype(
+        np.float32
+    )
     return z
 
-def gaussian_mixture(batch_size, n_dim=2, n_labels=10,
-                     x_var=0.5, y_var=0.1, label_indices=None):
+
+def gaussian_mixture(
+    batch_size, n_dim=2, n_labels=10, x_var=0.5, y_var=0.1, label_indices=None
+):
     # borrow from:
     # https://github.com/nicklhy/AdversarialAutoEncoder/blob/master/data_factory.py#L40
     if n_dim % 2 != 0:
@@ -62,7 +70,7 @@ def gaussian_mixture(batch_size, n_dim=2, n_labels=10,
     def sample(x, y, label, n_labels):
         shift = 1.4
         if label >= n_labels:
-            label =  np.random.randint(0, n_labels)
+            label = np.random.randint(0, n_labels)
         r = 2.0 * np.pi / float(n_labels) * float(label)
         new_x = x * cos(r) - y * sin(r)
         new_y = x * sin(r) + y * cos(r)
@@ -76,8 +84,12 @@ def gaussian_mixture(batch_size, n_dim=2, n_labels=10,
     for batch in range(batch_size):
         for zi in range(n_dim // 2):
             if label_indices is not None:
-                z[batch, zi*2:zi*2+2] = sample(x[batch, zi], y[batch, zi], label_indices[batch], n_labels)
+                z[batch, zi * 2 : zi * 2 + 2] = sample(
+                    x[batch, zi], y[batch, zi], label_indices[batch], n_labels
+                )
             else:
-                z[batch, zi*2:zi*2+2] = sample(x[batch, zi], y[batch, zi], np.random.randint(0, n_labels), n_labels)
+                z[batch, zi * 2 : zi * 2 + 2] = sample(
+                    x[batch, zi], y[batch, zi], np.random.randint(0, n_labels), n_labels
+                )
 
     return z

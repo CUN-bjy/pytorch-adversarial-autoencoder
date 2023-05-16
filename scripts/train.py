@@ -12,7 +12,6 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 import easydict
-import numpy as np
 from tqdm import tqdm
 import os
 from datetime import datetime

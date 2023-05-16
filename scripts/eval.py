@@ -13,8 +13,9 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 import easydict
-import os
+import os, io
 import time
+from tqdm import tqdm
 from datetime import datetime
 
 log_dir = os.path.join("runs/", datetime.today().isoformat())
@@ -42,6 +43,27 @@ def generate_manifold(args, model, writer):
         manifold = manifold.view(1, args.num_channels, plot_size*args.input_size[0], plot_size*args.input_size[1])
         writer.add_images(f"generated_manifold", manifold, 0) 
 
+def visualize_latent_space(args, model, test_loader, writer):
+    # change to eval mode
+    model._encoder.eval()
+    model._decoder.eval()
+    model._discriminator.eval()    
+    with torch.no_grad():
+        test_iterator = tqdm(
+            enumerate(test_loader), total=len(test_loader), desc="testing"
+        )
+        latents = torch.Tensor([]).to(args.device)
+        for i, batch_data in test_iterator:
+            images, labels = batch_data
+            images = images.view(images.size(0), -1).to(args.device)
+            labels = labels.to(args.device)
+            
+            z_set = model.encode(images)
+            to_plot = torch.cat((z_set, labels.unsqueeze(-1)), axis=-1)
+            latents = torch.cat((latents, to_plot), axis=0)
+        plt.scatter(latents[:, 0].cpu(), latents[:, 1].cpu(), c=latents[:, 2].cpu())
+
+        writer.add_figure(f"latent_space", plt.gcf())
 
 if __name__ == "__main__":
     args = easydict.EasyDict(
@@ -52,7 +74,7 @@ if __name__ == "__main__":
             "input_size": (28, 28), # (28,28) for MNIST, (218, 178) for CelebA
             "num_channels": 1, # 1 for MNIST, 3 for CelebA
             "latent_size": 2, # 128 for MNIST, 512 for CelebA
-            "checkpoint_path": "/home/junyeob/pytorch-adversarial-autoencoder/runs/230516AAE-MNIST-3/aae_checkpoint.pt"
+            "checkpoint_path": "/home/junyeob/pytorch-adversarial-autoencoder/runs/230516AAE-MNIST-2d-guassian/aae_checkpoint.pt"
         }
     )
 
@@ -77,5 +99,8 @@ if __name__ == "__main__":
     
     # generate manifold by sampling uniformly in the latent space Z
     generate_manifold(args, model, writer)
+    
+    # visualize latent space
+    visualize_latent_space(args, model, test_loader, writer)
     
     time.sleep(1)

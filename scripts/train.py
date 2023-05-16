@@ -15,8 +15,9 @@ import easydict
 import numpy as np
 from tqdm import tqdm
 import os
+from datetime import datetime
 
-log_dir = "runs/"
+log_dir = os.path.join("runs/", datetime.today().isoformat())
 writer = SummaryWriter(log_dir)
 
 
@@ -98,16 +99,23 @@ def train_model(args, model, train_loader, test_loader, debug=False):
                 gen_losses.append(gen_loss)
 
                 if i == 0:
+                    # nhw_orig = images.view(
+                    #     images.size(0), int(np.sqrt(images.size(-1))), -1
+                    # )[0]
+                    # nhw_recon = recon_x.view(
+                    #     images.size(0), int(np.sqrt(images.size(-1))), -1
+                    # )[0]
+                    # imshow(nhw_orig.cpu(), f"orig{epoch}")
+                    # imshow(nhw_recon.cpu(), f"recon{epoch}")
+
                     nhw_orig = images.view(
-                        images.size(0), int(np.sqrt(images.size(-1))), -1
-                    )[0]
+                        images.size(0), args.num_channels, args.input_size[0], -1
+                    )[0].unsqueeze(0)
                     nhw_recon = recon_x.view(
-                        images.size(0), int(np.sqrt(images.size(-1))), -1
-                    )[0]
-                    imshow(nhw_orig.cpu(), f"orig{epoch}")
-                    imshow(nhw_recon.cpu(), f"recon{epoch}")
-                    # writer.add_images(f"original{i}", nhw_orig.cpu(), epoch)
-                    # writer.add_images(f"reconstructed{i}", nhw_recon.cpu(), epoch)
+                        images.size(0), args.num_channels, args.input_size[0], -1
+                    )[0].unsqueeze(0)
+                    writer.add_images(f"original{i}", nhw_orig.cpu(), epoch)
+                    writer.add_images(f"reconstructed{i}", nhw_recon.cpu(), epoch)
                     if debug:
                         break
 
@@ -117,7 +125,7 @@ def train_model(args, model, train_loader, test_loader, debug=False):
         )
         writer.add_scalar("eval/disc_loss", sum(disc_losses) / len(disc_losses), epoch)
         writer.add_scalar("eval/gen_loss", sum(gen_losses) / len(gen_losses), epoch)
-        
+
         checkpoint = {
             "epoch": epoch + 1,
             "model": model.state_dict(),
@@ -134,22 +142,33 @@ if __name__ == "__main__":
             "device": torch.device("cuda")
             if torch.cuda.is_available()
             else torch.device("cpu"),
-            "input_size": 784,
-            "latent_size": 128,
+            "input_size": (218, 178), # (28,28) for MNIST, (218, 178) for CelebA
+            "num_channels": 3, # 1 for MNIST, 3 for CelebA
+            "latent_size": 512,
             "learning_rate": 0.001,
-            "max_iter": 1000,
+            "dataset": "celeba",
+            "max_iter": 10000,
             "debug": False,
         }
     )
 
-    # MNIST Dataset
-    train_set = dsets.MNIST(
-        root="./data", train=True, transform=transforms.ToTensor(), download=True
-    )
+    # Dataset
+    if args.dataset == "mnist":
+        train_set = dsets.MNIST(
+            root="./data", train=True, transform=transforms.ToTensor(), download=True
+        )
 
-    test_set = dsets.MNIST(
-        root="./data", train=False, transform=transforms.ToTensor(), download=True
-    )
+        test_set = dsets.MNIST(
+            root="./data", train=False, transform=transforms.ToTensor(), download=True
+        )
+    else:
+        train_set = dsets.CelebA(
+            root="./data", split="train", transform=transforms.ToTensor(), download=True
+        )
+
+        test_set = dsets.CelebA(
+            root="./data", split="valid", transform=transforms.ToTensor(), download=True
+        )
 
     # Data Loader
     train_loader = torch.utils.data.DataLoader(
@@ -160,7 +179,8 @@ if __name__ == "__main__":
     )
 
     # Declare AAE model
-    model = AAE(args.input_size, args.latent_size, device=args.device)
+    in_dim = args.num_channels * args.input_size[0] * args.input_size[1]
+    model = AAE(in_dim, args.latent_size, device=args.device)
     model.to(args.device)
 
     # Train

@@ -26,7 +26,6 @@ def imshow(data, title="MNIST"):
     plt.cla()
 
 
-
 if __name__ == "__main__":
     args = easydict.EasyDict(
         {
@@ -51,5 +50,3 @@ if __name__ == "__main__":
     # Declare AAE model
     model = AAE(args.input_size, args.latent_size, device=args.device)
     model.to(args.device)
-
-    

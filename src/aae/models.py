@@ -43,7 +43,7 @@ class AAE(nn.Module):
         in_dim: int,
         latent_dim: int,
         recon_lr: float = 1e-3,
-        reg_lr: float = 1e-5,
+        reg_lr: float = 1e-4,
         dist_type: str = "gaussian",
         device=torch.device("cuda"),
     ) -> None:
@@ -89,6 +89,8 @@ class AAE(nn.Module):
         return Exception("this function is not implemented")
 
     def train(self, x: Any) -> Dict[str, float]:
+        eps =  1e-15
+        
         self._encoder.train()
         self._decoder.train()
         self._discriminator.train()
@@ -128,7 +130,7 @@ class AAE(nn.Module):
         d_real = self.discriminate(z_real)
         d_fake = self.discriminate(z_fake)
 
-        disc_loss = -(torch.log(d_real) + torch.log(1 - d_fake))
+        disc_loss = -(torch.log(d_real + eps) + torch.log(1 - d_fake + eps))
 
         # backpropagate to minimize discriminative loss
         self._disc_optim.zero_grad()
@@ -141,7 +143,7 @@ class AAE(nn.Module):
         z_fake = self.encode(x)
         d_fake = self.discriminate(z_fake)
 
-        gen_loss = -torch.log(d_fake)
+        gen_loss = -torch.log(d_fake + eps)
 
         # backpropagate to confuse discriminaive network
         self._gen_optim.zero_grad()
@@ -228,7 +230,9 @@ class VAE(nn.Module):
         self._decoder.eval()
 
     def encode(self, x: Any) -> Any:
-        return self._encoder(x)
+        z_ = self._encoder(x)
+        mu = self.mu_vec(z_)
+        return mu
 
     def decode(self, z: Any) -> Any:
         return self._decoder(z)
